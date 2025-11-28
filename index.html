@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Call Dashboard | Advanced System Monitoring</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+    }
+    
+    .gradient-text {
+      background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .security-critical {
+      border-left: 4px solid #ef4444;
+    }
+    
+    .security-warning {
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .security-safe {
+      border-left: 4px solid #10b981;
+    }
+    
+    .circular-chart {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    .circle-bg {
+      fill: none;
+      stroke: #374151;
+      stroke-width: 3;
+    }
+    
+    .circle {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      animation: progress 1s ease-out forwards;
+    }
+    
+    @keyframes progress {
+      0% { stroke-dasharray: 0, 100; }
+    }
+    
+    .percentage {
+      fill: #fff;
+      font-size: 0.4em;
+      text-anchor: middle;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.6s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(96, 165, 250, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0); }
+    }
+    
+    .glow {
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+    }
+    
+    .nav-item {
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #60a5fa;
+      transition: width 0.3s ease;
+    }
+    
+    .nav-item:hover::after {
+      width: 100%;
+    }
+    
+    .feature-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Navigation -->
+  <nav class="glass-card sticky top-0 z-50">
+    <div class="container mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+            <i class="fas fa-shield-alt text-white"></i>
+          </div>
+          <span class="text-xl font-bold gradient-text">SysGuard</span>
+        </div>
+        
+        <div class="hidden md:flex space-x-8">
+          <a href="#home" class="nav-item text-gray-300 hover:text-white">Home</a>
+          <a href="#features" class="nav-item text-gray-300 hover:text-white">Features</a>
+          <a href="#about" class="nav-item text-gray-300 hover:text-white">About</a>
+          <a href="#dashboard" class="nav-item text-gray-300 hover:text-white">Dashboard</a>
+        </div>
+        
+        <div>
+          <button id="loginNavBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-300">
+            <i class="fas fa-sign-in-alt mr-2"></i>Login
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Home Section -->
+  <section id="home" class="py-20 px-6">
+    <div class="container mx-auto max-w-6xl">
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/2 mb-10 md:mb-0 fade-in">
+          <h1 class="text-4xl md:text-6xl font-bold mb-6">
+            Advanced <span class="gradient-text">System Call</span> Monitoring
+          </h1>
+          <p class="text-xl text-gray-300 mb-8">
+            A comprehensive dashboard for monitoring, analyzing, and securing system calls with real-time visualization and security assessment.
+          </p>
+          <div class="flex space-x-4">
+            <button id="getStartedBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition duration-300 pulse">
+              Get Started
+            </button>
+            <button id="learnMoreBtn" class="glass-card hover:glow text-white px-6 py-3 rounded-lg font-medium transition duration-300">
+              Learn More
+            </button>
+          </div>
+        </div>
+        
+        <div class="md:w-1/2 flex justify-center">
+          <div class="relative w-full max-w-md">
+            <div class="absolute -top-10 -left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+            <div class="absolute -bottom-10 -right-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+            <div class="relative glass-card p-8 rounded-2xl shadow-2xl">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">System Overview</h3>
+                <div class="w-3 h-3 bg-green-500 rounded-full pulse"></div>
+              </div>
+              
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <span>CPU Usage</span>
+                  <span class="font-semibold">42%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 42%"></div>
+                </div>
+                
+                <div class="flex justify-between">
+                  <span>Memory Usage</span>
+                  <span class="font-semibold">67%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 67%"></div>
+                </div>
+                
+                <div class="flex justify-between">
+                  <span>Active Calls</span>
+                  <span class="font-semibold">12</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                </div>
+              </div>
+              
+              <div class="mt-6 pt-6 border-t border-gray-700">
+                <div class="flex justify-between text-sm">
+                  <div class="text-center">
+                    <div class="text-green-400 font-bold">8</div>
+                    <div class="text-gray-400">Safe</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-yellow-400 font-bold">3</div>
+                    <div class="text-gray-400">Warning</div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-red-400 font-bold">1</div>
+                    <div class="text-gray-400">Critical</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-6 bg-slate-800/50">
+    <div class="container mx-auto max-w-6xl">
+      <div class="text-center mb-16 fade-in">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Powerful Features</h2>
+        <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+          Our system call dashboard provides comprehensive monitoring and security analysis capabilities.
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="glass-card p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-chart-bar text-blue-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Real-time Monitoring</h3>
+          <p class="text-gray-300">Monitor system calls, CPU, and memory usage with live updating visualizations.</p>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-shield-alt text-green-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Security Analysis</h3>
+          <p class="text-gray-300">Advanced security rules to detect potentially dangerous system calls.</p>
+        </div>
+        
+        <div class="glasscard p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-history text-purple-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Call History</h3>
+          <p class="text-gray-300">Comprehensive logging of all system calls with detailed parameters and timestamps.</p>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-chart-pie text-yellow-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Visual Analytics</h3>
+          <p class="text-gray-300">Interactive charts and graphs to visualize system call patterns and frequencies.</p>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Threat Detection</h3>
+          <p class="text-gray-300">Identify suspicious patterns and potential security threats in real-time.</p>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl feature-card">
+          <div class="w-12 h-12 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-4">
+            <i class="fas fa-file-export text-indigo-400 text-xl"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-2">Data Export</h3>
+          <p class="text-gray-300">Export system call logs and analysis reports in multiple formats.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-20 px-6">
+    <div class="container mx-auto max-w-6xl">
+      <div class="flex flex-col md:flex-row items-center">
+        <div class="md:w-1/2 mb-10 md:mb-0">
+          <h2 class="text-3xl md:text-4xl font-bold mb-6">About This Project</h2>
+          <p class="text-lg text-gray-300 mb-6">
+            The System Call Dashboard is an educational and monitoring tool designed to help developers and system administrators understand, track, and secure system calls in a simulated environment.
+          </p>
+          <p class="text-lg text-gray-300 mb-6">
+            This project demonstrates how system calls work, their potential security implications, and how to monitor them effectively. It's built with modern web technologies and provides a realistic simulation of system call behavior.
+          </p>
+          
+          <div class="flex flex-wrap gap-3 mb-6">
+            <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">System Monitoring</span>
+            <span class="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">Security Analysis</span>
+            <span class="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">Real-time Visualization</span>
+            <span class="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm">Educational Tool</span>
+          </div>
+          
+          <div class="flex space-x-4">
+            <a href="#" class="flex items-center text-gray-300 hover:text-white">
+              <i class="fab fa-github mr-2"></i> GitHub
+            </a>
+            <a href="#" class="flex items-center text-gray-300 hover:text-white">
+              <i class="fas fa-book mr-2"></i> Documentation
+            </a>
+          </div>
+        </div>
+        
+        <div class="md:w-1/2 flex justify-center">
+          <div class="glass-card p-8 rounded-2xl w-full max-w-md">
+            <h3 class="text-xl font-bold mb-6 text-center">Technology Stack</h3>
+            
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center mr-4">
+                  <i class="fab fa-html5 text-orange-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold">HTML5</h4>
+                  <p class="text-sm text-gray-400">Semantic structure</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-4">
+                  <i class="fab fa-css3-alt text-blue-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold">Tailwind CSS</h4>
+                  <p class="text-sm text-gray-400">Utility-first styling</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center mr-4">
+                  <i class="fab fa-js-square text-yellow-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold">JavaScript</h4>
+                  <p class="text-sm text-gray-400">Interactive functionality</p>
+                </div>
+              </div>
+              
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center mr-4">
+                  <i class="fas fa-chart-bar text-red-400"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold">Chart.js</h4>
+                  <p class="text-sm text-gray-400">Data visualization</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login Section -->
+  <section id="loginSection" class="min-h-screen flex items-center justify-center px-4 py-20">
+    <div class="glass-card p-8 rounded-2xl shadow-xl w-full max-w-md">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-blue-500 mx-auto flex items-center justify-center mb-4">
+          <i class="fas fa-lock text-white text-xl"></i>
+        </div>
+        <h2 class="text-3xl font-bold gradient-text">System Call Dashboard</h2>
+        <p class="text-gray-400 mt-2">Sign in to access the monitoring dashboard</p>
+      </div>
+      
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label for="username" class="block text-sm font-medium mb-2">Username</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-500"></i>
+            </div>
+            <input type="text" id="username" required class="w-full pl-10 px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300" placeholder="Enter your username" />
+          </div>
+        </div>
+        
+        <div>
+          <label for="password" class="block text-sm font-medium mb-2">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-key text-gray-500"></i>
+            </div>
+            <input type="password" id="password" required class="w-full pl-10 px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300" placeholder="Enter your password" />
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition duration-300 flex items-center justify-center">
+          <i class="fas fa-sign-in-alt mr-2"></i> Login to Dashboard
+        </button>
+      </form>
+      
+      <div class="mt-6 text-center text-sm text-gray-400">
+        <p>Demo credentials: <span class="text-blue-400">admin</span> / <span class="text-blue-400">sysguard</span></p>
+      </div>
+      
+      <p id="loginMessage" class="mt-4 text-center text-red-400"></p>
+    </div>
+  </section>
+
+  <!-- Dashboard Section -->
+  <section id="dashboardSection" class="hidden min-h-screen p-6">
+    <div class="container mx-auto max-w-7xl">
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold gradient-text mb-2">System Monitor</h1>
+          <p class="text-gray-400">Real-time system call monitoring and security analysis</p>
+        </div>
+        
+        <div class="flex space-x-3 mt-4 md:mt-0">
+          <button id="downloadLog" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-300">
+            <i class="fas fa-download mr-2"></i> Export Log
+          </button>
+          <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-300">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <div class="glass-card p-6 rounded-xl security-warning">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-xl font-semibold mb-2">CPU Usage</h2>
+              <p id="cpuUsage" class="text-2xl font-bold">Loading...</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+              <i class="fas fa-microchip text-yellow-400"></i>
+            </div>
+          </div>
+          <div id="cpuGauge" class="mt-4"></div>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl security-warning">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-xl font-semibold mb-2">Memory Usage</h2>
+              <p id="memoryUsage" class="text-2xl font-bold">Loading...</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+              <i class="fas fa-memory text-yellow-400"></i>
+            </div>
+          </div>
+          <div id="memoryGauge" class="mt-4"></div>
+        </div>
+        
+        <div class="glass-card p-6 rounded-xl security-critical">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-xl font-semibold mb-2">System Calls</h2>
+              <p id="readWriteFork" class="text-lg">Loading...</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+              <i class="fas fa-terminal text-red-400"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-sm" id="callSecurityStatus"></div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- System Call Log -->
+        <div class="lg:col-span-2 glass-card p-6 rounded-xl">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold">System Call Log</h2>
+            <span class="text-sm text-gray-400" id="logCount">0 calls</span>
+          </div>
+          <div id="syscallLog" class="h-64 overflow-y-auto bg-slate-800 p-4 rounded-lg text-sm font-mono space-y-2">
+            <p class="text-gray-500">Initializing log...</p>
+          </div>
+        </div>
+        
+        <!-- System Call Form -->
+        <div class="glass-card p-6 rounded-xl">
+          <h2 class="text-xl font-semibold mb-4 gradient-text">System Call Form</h2>
+          <form id="sysCallForm" class="space-y-4">
+            <div>
+              <label for="callType" class="block text-sm font-medium mb-2">Call Type</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-code text-gray-500"></i>
+                </div>
+                <select id="callType" class="w-full pl-10 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300">
+                  <option value="read">Read</option>
+                  <option value="write">Write</option>
+                  <option value="fork">Fork</option>
+                  <option value="exec">Exec</option>
+                  <option value="open">Open</option>
+                </select>
+              </div>
+            </div>
+            
+            <div>
+              <label for="param1" class="block text-sm font-medium mb-2">File Descriptor</label>
+              <input type="number" id="param1" min="0" max="1024" class="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300" />
+            </div>
+            
+            <div>
+              <label for="param2" class="block text-sm font-medium mb-2">Buffer/Path</label>
+              <input type="text" id="param2" class="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300" />
+            </div>
+            
+            <div>
+              <label for="param3" class="block text-sm font-medium mb-2">Size/Flags</label>
+              <input type="number" id="param3" min="0" class="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition duration-300" />
+            </div>
+            
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition duration-300 flex items-center justify-center">
+              <i class="fas fa-play-circle mr-2"></i> Execute System Call
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Charts and Security Analysis -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- System Call Chart -->
+        <div class="glass-card p-6 rounded-xl">
+          <h2 class="text-xl font-semibold mb-4 gradient-text">System Call Frequency</h2>
+          <canvas id="syscallChart" class="w-full h-72"></canvas>
+        </div>
+        
+        <!-- Security Analysis -->
+        <div class="glass-card p-6 rounded-xl">
+          <h2 class="text-xl font-semibold mb-4 gradient-text">Security Analysis</h2>
+          <div id="securityAnalysis" class="text-sm">
+            <p class="text-gray-500">No system calls executed yet. Security analysis will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="glass-card mt-20 py-8 px-6">
+    <div class="container mx-auto max-w-6xl">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-6 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+              <i class="fas fa-shield-alt text-white text-sm"></i>
+            </div>
+            <span class="text-lg font-bold gradient-text">SysGuard</span>
+          </div>
+          <p class="text-gray-400 mt-2">Advanced System Call Monitoring</p>
+        </div>
+        
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fab fa-github text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fab fa-twitter text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fas fa-envelope text-xl"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="border-t border-slate-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+        <p>&copy; 2023 SysGuard Dashboard. Educational purpose project.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // DOM Elements
+    const loginForm = document.getElementById("loginForm");
+    const loginMessage = document.getElementById("loginMessage");
+    const loginSection = document.getElementById("loginSection");
+    const dashboardSection = document.getElementById("dashboardSection");
+    const sysCallForm = document.getElementById("sysCallForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const downloadLog = document.getElementById("downloadLog");
+    const securityAnalysis = document.getElementById("securityAnalysis");
+    const callSecurityStatus = document.getElementById("callSecurityStatus");
+    const loginNavBtn = document.getElementById("loginNavBtn");
+    const getStartedBtn = document.getElementById("getStartedBtn");
+    const learnMoreBtn = document.getElementById("learnMoreBtn");
+
+    // Application State
+    let systemState = {
+      callType: "read",
+      param1: 1,
+      param2: "buffer",
+      param3: 200,
+      securityLevel: "medium",
+      callHistory: []
+    };
+
+    // Security Rules
+    const securityRules = {
+      read: {
+        safe: (fd, buf, count) => fd > 2 && count <= 4096,
+        warning: (fd, buf, count) => fd <= 2 || count > 4096,
+        message: (fd, buf, count) => {
+          if (fd <= 2) return "Reading from standard file descriptors";
+          if (count > 4096) return "Large read operation (>4KB)";
+          return "Safe read operation";
+        }
+      },
+      write: {
+        safe: (fd, buf, count) => fd > 2 && count <= 4096,
+        warning: (fd, buf, count) => fd <= 2 || count > 4096,
+        message: (fd, buf, count) => {
+          if (fd <= 2) return "Writing to standard file descriptors";
+          if (count > 4096) return "Large write operation (>4KB)";
+          return "Safe write operation";
+        }
+      },
+      fork: {
+        safe: () => false,
+        warning: () => true,
+        message: () => "Fork creates a new process - potential risk"
+      },
+      exec: {
+        safe: (path) => !path.includes("..") && !path.startsWith("/"),
+        warning: (path) => path.includes("..") || path.startsWith("/"),
+        message: (path) => {
+          if (path.includes("..")) return "Path traversal attempt";
+          if (path.startsWith("/")) return "Absolute path execution risk";
+          return "Executing relative path";
+        }
+      },
+      open: {
+        safe: (path, flags) => !path.includes("..") && flags === 0,
+        warning: (path, flags) => path.includes("..") || flags !== 0,
+        message: (path, flags) => {
+          if (path.includes("..")) return "Path traversal attempt";
+          if (flags !== 0) return "Non-standard flags used";
+          return "Safe file open operation";
+        }
+      }
+    };
+
+    // Navigation
+    loginNavBtn.addEventListener("click", () => {
+      document.getElementById('loginSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    getStartedBtn.addEventListener("click", () => {
+      document.getElementById('loginSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    learnMoreBtn.addEventListener("click", () => {
+      document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Login Functionality
+    loginForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (username === "admin" && password === "sysguard") {
+        loginMessage.style.color = "green";
+        loginMessage.textContent = "Login successful! Redirecting...";
+        setTimeout(() => {
+          loginSection.classList.add("hidden");
+          dashboardSection.classList.remove("hidden");
+          startDashboard();
+          document.getElementById('dashboardSection').scrollIntoView({ behavior: 'smooth' });
+        }, 1000);
+      } else {
+        loginMessage.textContent = "Invalid credentials! Try admin/sysguard";
+      }
+    });
+
+    // Logout Functionality
+    logoutBtn.addEventListener("click", () => {
+      dashboardSection.classList.add("hidden");
+      loginSection.classList.remove("hidden");
+      loginMessage.textContent = "Logged out successfully";
+      loginMessage.style.color = "green";
+      document.getElementById('loginSection').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // System Call Form
+    sysCallForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      systemState.callType = document.getElementById("callType").value;
+      systemState.param1 = document.getElementById("param1").value || 1;
+      systemState.param2 = document.getElementById("param2").value || "buffer";
+      systemState.param3 = document.getElementById("param3").value || 200;
+
+      analyzeSystemCall();
+
+      systemState.callHistory.push({
+        type: systemState.callType,
+        params: [systemState.param1, systemState.param2, systemState.param3],
+        timestamp: new Date().toISOString()
+      });
+
+      updateCallDisplay();
+      updateSecurityAnalysis();
+      updateLogCount();
+    });
+
+    // Security Analysis
+    function analyzeSystemCall() {
+      const { callType, param1, param2, param3 } = systemState;
+      const rule = securityRules[callType] || securityRules.read;
+
+      if (rule.safe(param1, param2, param3)) {
+        systemState.securityLevel = "safe";
+      } else if (rule.warning(param1, param2, param3)) {
+        systemState.securityLevel = "warning";
+      } else {
+        systemState.securityLevel = "critical";
+      }
+
+           callSecurityStatus.textContent = rule.message(param1, param2, param3);
+      callSecurityStatus.className = `text-sm mt-2 ${
+        systemState.securityLevel === "safe" ? "text-green-400" :
+        systemState.securityLevel === "warning" ? "text-yellow-400" : "text-red-400"
+      }`;
+    }
+
+    function updateSecurityAnalysis() {
+      if (systemState.callHistory.length === 0) return;
+      const recentCalls = systemState.callHistory.slice(-5).reverse();
+      let html = '<div class="space-y-3">';
+      recentCalls.forEach(call => {
+        const rule = securityRules[call.type] || securityRules.read;
+        const level = rule.safe(...call.params) ? 'safe' : rule.warning(...call.params) ? 'warning' : 'critical';
+        const color = level === 'safe' ? 'bg-green-500/10 border-l-4 border-green-500' : 
+                     level === 'warning' ? 'bg-yellow-500/10 border-l-4 border-yellow-500' : 
+                     'bg-red-500/10 border-l-4 border-red-500';
+        const icon = level === 'safe' ? 'fa-check-circle text-green-400' : 
+                    level === 'warning' ? 'fa-exclamation-triangle text-yellow-400' : 
+                    'fa-times-circle text-red-400';
+        
+        html += `<div class="p-3 rounded-lg ${color}">
+          <div class="flex items-start">
+            <i class="fas ${icon} mt-1 mr-3"></i>
+            <div class="flex-1">
+              <div class="font-bold flex justify-between">
+                <span>${call.type.toUpperCase()} call</span>
+                <span class="text-xs font-normal opacity-70">${new Date(call.timestamp).toLocaleTimeString()}</span>
+              </div>
+              <div class="mt-1 text-sm">${rule.message(...call.params)}</div>
+              <div class="text-xs mt-1 opacity-75">Params: ${call.params.join(", ")}</div>
+            </div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      securityAnalysis.innerHTML = html;
+      updateChart();
+    }
+
+    function updateCallDisplay() {
+      const { callType, param1, param2, param3 } = systemState;
+      const log = document.getElementById("syscallLog");
+      const callText = `${callType.toUpperCase()}(fd=${param1}, buf=${param2}, count=${param3})`;
+      document.getElementById("readWriteFork").textContent = callText;
+      
+      const line = document.createElement("div");
+      line.className = `flex items-start py-1 ${
+        systemState.securityLevel === "safe" ? "text-green-400" :
+        systemState.securityLevel === "warning" ? "text-yellow-400" : "text-red-400"
+      }`;
+      
+      const icon = systemState.securityLevel === "safe" ? "fa-check-circle" :
+                  systemState.securityLevel === "warning" ? "fa-exclamation-triangle" : "fa-times-circle";
+      
+      line.innerHTML = `
+        <i class="fas ${icon} mt-1 mr-2 text-xs"></i>
+        <div>
+          <span class="opacity-70">[${new Date().toLocaleTimeString()}]</span> ${callText}
+        </div>
+      `;
+      
+      log.appendChild(line);
+      if (log.children.length > 100) log.removeChild(log.firstChild);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function updateLogCount() {
+      const logCount = document.getElementById("logCount");
+      logCount.textContent = `${systemState.callHistory.length} calls`;
+    }
+
+    // Gauge Creation
+    function createGauge(elementId, value) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<svg viewBox="0 0 36 36" class="circular-chart">
+        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path class="circle" stroke="${value > 85 ? '#ef4444' : value > 70 ? '#f59e0b' : '#10b981'}" stroke-dasharray="${value}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <text x="18" y="20.5" class="percentage">${value}%</text>
+      </svg>`;
+    }
+
+    // Dashboard Initialization
+    function startDashboard() {
+      createGauge("cpuGauge", 0);
+      createGauge("memoryGauge", 0);
+      const cpuText = document.getElementById("cpuUsage");
+      const memText = document.getElementById("memoryUsage");
+
+      // Initialize with some demo data
+      const initialCalls = [
+        { type: 'read', params: [3, 'buffer', 1024], timestamp: new Date(Date.now() - 30000).toISOString() },
+        { type: 'write', params: [1, 'stdout', 256], timestamp: new Date(Date.now() - 25000).toISOString() },
+        { type: 'open', params: ['/etc/passwd', 0, 0], timestamp: new Date(Date.now() - 20000).toISOString() },
+        { type: 'exec', params: ['/bin/ls', 0, 0], timestamp: new Date(Date.now() - 15000).toISOString() },
+        { type: 'fork', params: [0, 0, 0], timestamp: new Date(Date.now() - 10000).toISOString() }
+      ];
+      
+      systemState.callHistory = initialCalls;
+      updateSecurityAnalysis();
+      updateLogCount();
+      
+      // Add initial calls to log
+      initialCalls.forEach(call => {
+        const rule = securityRules[call.type] || securityRules.read;
+        const level = rule.safe(...call.params) ? 'safe' : rule.warning(...call.params) ? 'warning' : 'critical';
+        systemState.securityLevel = level;
+        updateCallDisplay();
+      });
+
+      // Simulate real-time updates
+      setInterval(() => {
+        const cpu = Math.round(Math.random() * 40 + 40);
+        const mem = Math.round(Math.random() * 30 + 50);
+        createGauge("cpuGauge", cpu);
+        createGauge("memoryGauge", mem);
+        cpuText.textContent = `${cpu}%`;
+        memText.textContent = `${mem}%`;
+      }, 2000);
+    }
+
+    // Download Log Functionality
+    downloadLog.addEventListener("click", () => {
+      if (systemState.callHistory.length === 0) {
+        alert("No system calls to download.");
+        return;
+      }
+      
+      const blob = new Blob([JSON.stringify(systemState.callHistory, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `system_calls_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+    });
+
+    // Chart Implementation
+    const ctx = document.getElementById("syscallChart")?.getContext("2d");
+    let syscallChart;
+
+    function updateChart() {
+      if (!ctx) return;
+
+      const callCounts = {};
+      systemState.callHistory.forEach(call => {
+        callCounts[call.type] = (callCounts[call.type] || 0) + 1;
+      });
+
+      const labels = Object.keys(callCounts);
+      const data = Object.values(callCounts);
+
+      if (syscallChart) {
+        syscallChart.data.labels = labels;
+        syscallChart.data.datasets[0].data = data;
+        syscallChart.update();
+      } else {
+        syscallChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'System Call Frequency',
+              data: data,
+              backgroundColor: labels.map(label => {
+                switch (label) {
+                  case 'read': return '#10b981'; // green
+                  case 'write': return '#3b82f6'; // blue
+                  case 'fork': return '#ef4444'; // red
+                  case 'exec': return '#f59e0b'; // amber
+                  case 'open': return '#8b5cf6'; // purple
+                  default: return '#9ca3af'; // gray
+                }
+              }),
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)'
+                },
+                ticks: {
+                  color: 'white',
+                  font: {
+                    size: 11
+                  }
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  color: 'white',
+                  font: {
+                    size: 11
+                  }
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 1
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Initialize tooltips for feature cards
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+        this.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.2)';
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+      });
+    });
+
+    // Add animation to stats cards on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = 'fadeIn 0.8s ease-in-out';
+          entry.target.style.opacity = '1';
+        }
+      });
+    }, observerOptions);
+
+    // Observe feature cards and stats
+    document.querySelectorAll('.feature-card, .glass-card').forEach(el => {
+      el.style.opacity = '0';
+      observer.observe(el);
+    });
+
+    // Initialize with some default form values
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('param1').value = '1';
+      document.getElementById('param2').value = 'buffer';
+      document.getElementById('param3').value = '200';
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      
+      if (e.ctrlKey && e.key === 'Enter' && !dashboardSection.classList.contains('hidden')) {
+        sysCallForm.dispatchEvent(new Event('submit'));
+      }
+      
+      
+      if (e.key === 'Escape' && !dashboardSection.classList.contains('hidden')) {
+        sysCallForm.reset();
+        document.getElementById('param1').value = '1';
+        document.getElementById('param2').value = 'buffer';
+        document.getElementById('param3').value = '200';
+      }
+    });
+
+    // Add responsive behavior for mobile
+    function handleResize() {
+      if (window.innerWidth < 768) {
+        document.body.classList.add('mobile');
+      } else {
+        document.body.classList.remove('mobile');
+      }
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    console.log('System Call Dashboard initialized successfully');
+    console.log('Demo credentials: admin / sysguard');
+  </script>
+</body>
+</html>
